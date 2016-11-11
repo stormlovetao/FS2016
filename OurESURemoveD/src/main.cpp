@@ -29,7 +29,7 @@ int subgraphSize = -1, num_random_graphs = 0;
 float subgraphDensity = 2;
 unsigned long long callNautyCount = 0;
 
-float AdjStrTime = 0, densityCheckTime = 0;
+//float AdjStrTime = 0, densityCheckTime = 0;
 
 //g stores the input graph
 Graph *g;
@@ -122,7 +122,9 @@ void Enumerate() {
 		sub->subgraphSize = 1;
 		sub->lastVertex = sub->vertices[0] = v;
 
-		sub->currentEdgeNum = 0;// Tao add
+		//sub->verticesEdges[0] = 0;//Tao add
+		sub->verticesAdj[0] = "";
+
 		
 		sub->visited[v] = true;
 		//cout << "Before Nexts, everything is OK"<<endl;
@@ -148,31 +150,31 @@ std::string graphDegreeSequence(string adj, int subgraphSize)
 
 
 
-    // for(i = 0; i < subgraphSize; i++)
-    // {
-    //     for(j = i+1; j<subgraphSize; j++)
-    //     {
-    //     	index = j*(j-1)/2+i;
-    //         if(adj[index] == '1')
-    //         {
-    //             degreeVec[i] += 1;
-    //             degreeVec[j] += 1;
-    //         }
-    //         //index ++;
-    //     }
-    // }
     for(i = 0; i < subgraphSize; i++)
     {
         for(j = i+1; j<subgraphSize; j++)
         {
+        	index = j*(j-1)/2+i;
             if(adj[index] == '1')
             {
                 degreeVec[i] += 1;
-                degreeVec[j] += 1;// undirected!
+                degreeVec[j] += 1;
             }
-            index ++;
+            //index ++;
         }
     }
+    // for(i = 0; i < subgraphSize; i++)
+    // {
+    //     for(j = i+1; j<subgraphSize; j++)
+    //     {
+    //         if(adj[index] == '1')
+    //         {
+    //             degreeVec[i] += 1;
+    //             degreeVec[j] += 1;// undirected!
+    //         }
+    //         index ++;
+    //     }
+    // }
    
     std::sort(degreeVec.begin(), degreeVec.end());
    
@@ -210,31 +212,31 @@ string calculateCam(string graphIn, int subgraphSize)
    
 
     register int i, j, index;
-    // for(i = 0; i < subgraphSize; i++)
-    // {
-    //     for (j = i+1; j<subgraphSize; j++)
-    //     {
-    //         index = j*(j-1)/2 +i;
-    //         if(graphIn[index] == '1')
-    //         {
-    //             tgraph[i*subgraphSize + j] = '1';
-    //             tgraph[j*subgraphSize + i] = '1';//undirected
-    //         }
-    //     }
-    // }
-    index = 0;
     for(i = 0; i < subgraphSize; i++)
     {
         for (j = i+1; j<subgraphSize; j++)
         {
+            index = j*(j-1)/2 +i;
             if(graphIn[index] == '1')
             {
                 tgraph[i*subgraphSize + j] = '1';
                 tgraph[j*subgraphSize + i] = '1';//undirected
             }
-            index++;
         }
     }
+    // index = 0;
+    // for(i = 0; i < subgraphSize; i++)
+    // {
+    //     for (j = i+1; j<subgraphSize; j++)
+    //     {
+    //         if(graphIn[index] == '1')
+    //         {
+    //             tgraph[i*subgraphSize + j] = '1';
+    //             tgraph[j*subgraphSize + i] = '1';//undirected
+    //         }
+    //         index++;
+    //     }
+    // }
 
     int  n, m, v, k;
     unsigned nCanCode;
@@ -307,6 +309,25 @@ bool isConnected(int i, int j, string adjStr)
 	else
 		return FALSE;
 }
+bool isConnected2(int i, int j, string adjStr)
+{
+	int a, b, index;
+	if(i < j)
+	{
+		a = i;
+		b = j;
+	}
+	else
+	{
+		a = j;
+		b = i;
+	}
+	index = b*(b-1)/2 +a;
+	if(adjStr[index] == '1')
+		return TRUE;
+	else
+		return FALSE;
+}
 string subGetTreeString(int* subVertices, int root, string adjStr )
 {
 		
@@ -331,7 +352,7 @@ string subGetTreeString(int* subVertices, int root, string adjStr )
   			queue.pop_front();
   			for (int i = 0; i < subgraphSize; ++i)
   			{
-  				if (isConnected(lookup[k], subVertices[i], adjStr) && used[i]==false)
+  				if (isConnected2(lookup[k], subVertices[i], adjStr) && used[i]==false)
   				{
   					tree.addEdge(k, ind);
   					queue.push_back(ind);
@@ -370,18 +391,38 @@ string GetTreeCanStr(string adjStr, int subgraphSize)
 		subgraphDegree[i] = 0;
 		tempSubgraph[i] = i;
 	}
+	// for(i = 0; i < subgraphSize; i++)
+	// {
+	// 	for (j = i+1; j < subgraphSize; j++)
+	// 	{
+	// 		if(adjStr[ind] == '1')
+	// 		{
+	// 			subgraphDegree[i] += 1;
+	// 			subgraphDegree[j] += 1; //undirected!!
+	// 		}
+	// 		ind++;
+	// 	}
+	// }
+	//cout<<"start"<<endl;	
 	for(i = 0; i < subgraphSize; i++)
-	{
-		for (j = i+1; j < subgraphSize; j++)
-		{
-			if(adjStr[ind] == '1')
-			{
-				subgraphDegree[i] += 1;
-				subgraphDegree[j] += 1; //undirected!!
-			}
-			ind++;
-		}
-	}
+    {
+        for (j = i+1; j<subgraphSize; j++)
+        {
+            ind = j*(j-1)/2 +i;
+            if(adjStr[ind] == '1')
+            {
+                subgraphDegree[i] += 1;
+                subgraphDegree[j] += 1;//undirected
+            }
+        }
+    }
+
+    // for (int i = 0; i < subgraphSize; ++i)
+    // {
+    // 	cout<<subgraphDegree[i]<<endl;
+    // }
+
+
 	int* subVerticesDegree =  new int[subgraphSize];
 	for (i = 0; i < subgraphSize; ++i)
 	{
@@ -415,7 +456,7 @@ string GetTreeCanStr(string adjStr, int subgraphSize)
 			//cout<<"d"<<deleted_node;
 			for (int i = 0; i < subgraphSize; ++i)
 			{
-				if (tempSubgraph[i]!=-1 && isConnected(tempSubgraph[i], deleted_node, adjStr))
+				if (tempSubgraph[i]!=-1 && isConnected2(tempSubgraph[i], deleted_node, adjStr))
 				{
 					subgraphDegree[tempSubgraph[i]] -= 1;
 				}
@@ -476,8 +517,8 @@ string GetTreeCanStr(string adjStr, int subgraphSize)
 	}
 
 
-	// cout<<"root1: " <<root1<<" root2: "<<root2<<endl;
-	// cout<<"root1Ind: " <<root1Ind<<" root2Ind: "<<root2Ind<<endl;
+	 //cout<<"root1: " <<root1<<" root2: "<<root2<<endl;
+	 //cout<<"root1Ind: " <<root1Ind<<" root2Ind: "<<root2Ind<<endl;
 
 	string outStr1 = ">", outStr2 = ">";
 	//Call Tree part, input a layered matrix, o as the root
@@ -808,7 +849,7 @@ int main(int argc, char *argv[]) {
 	printf("\n=============================\n");
 	printf("Call Nauty %lld\n", callNautyCount );
 	
-	printf("Time for density check: %f\n", densityCheckTime);
-	printf("Time for adjStr: %f\n", AdjStrTime);
+	//printf("Time for density check: %f\n", densityCheckTime);
+	//printf("Time for adjStr: %f\n", AdjStrTime);
 	return 0;
 }

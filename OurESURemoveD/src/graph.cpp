@@ -33,7 +33,7 @@ extern hash_map<std::string,long long int> treeInt;
 
 
 
-extern float AdjStrTime, densityCheckTime;
+//extern float AdjStrTime, densityCheckTime;
 
 /****************************************************************
 ****************************************************************/
@@ -62,9 +62,10 @@ Subgraph::Subgraph(int subgraphSize, int maxSize, int graphSize) {//initialize =
 	childCounter = 0;
 	visited = new bool[graphSize+1];
 	vertices = new unsigned int[maxSize];
+	//verticesEdges = new unsigned int[maxSize];// Tao add on Nov. 9
+	verticesAdj = new string[maxSize];
 	children = new unsigned int[graphSize];
-	currentEdgeNum = 0;// Tao added 2016-1-19
-
+	
 	for(int i = 0; i <= graphSize; i++)
 		visited[i] = false;
 }
@@ -74,6 +75,7 @@ Subgraph::Subgraph(int subgraphSize, int maxSize, int graphSize) {//initialize =
 Subgraph::~Subgraph() {
 	delete[] visited;
 	delete[] vertices;
+	delete[] verticesAdj;
 }
 
 /****************************************************************
@@ -106,6 +108,7 @@ void Graph::Nexts(Subgraph *sub, int maxSize, int startChild) {//g->Nexts(sub, s
 		if(!sub->visited[N[j]]) {
 			sub->visited[N[j]] = true;
 			sub->AddChild(N[j]);//3 arrays: visited[154],vertices[4], children[154]
+			//sub->AddChildEdge(N(j)); //Tao add on Nov. 9
 			addedCounter++;
 		}
 	}
@@ -114,60 +117,57 @@ void Graph::Nexts(Subgraph *sub, int maxSize, int startChild) {//g->Nexts(sub, s
 	{
 		
 		sub->lastVertex = sub->vertices[sub->subgraphSize] = sub->children[c];
+		// for edges
+		// sub->verticesEdges[sub->subgraphSize] = 0;
+		// for (int i = 0; i < sub->subgraphSize; ++i)
+		// {
+		// 	if(isConnected(sub->vertices[i], sub->lastVertex))
+		// 	{
+		// 		sub->verticesEdges[sub->subgraphSize] += 1;
+		// 	}
+		// }
+		// for adjstr
+		sub->verticesAdj[sub->subgraphSize] = "";
+		sub->verticesAdj[sub->subgraphSize].reserve(sub->subgraphSize );
+		for (int i = 0; i < sub->subgraphSize; ++i)
+		{
+			if(isConnected(sub->vertices[i], sub->lastVertex))
+			{
+				sub->verticesAdj[sub->subgraphSize].push_back('1');
+			}
+			else
+				sub->verticesAdj[sub->subgraphSize].push_back('0');
+		}
+
 		sub->subgraphSize++;
 
 		if((sub->subgraphSize == maxSize)&&(subgraphCounter < subgraph_THR))// useful
 		{
+			
+			// for (int i = 1; i < maxSize; ++i)
+			// {
+			// 	test_edgeNum += sub->verticesEdges[i];
+			// }
 
 			subgraphCounter++;
 			register int i,j;
 			int subEdgeNum = 0;
-			// clock_t tmpstart = clock();
-			// for(i = 0; i < maxSize; i++)
-			// {
-			// 	for(j = i+1; j < maxSize; j++)
-			// 	{
-			// 		if(isConnected(sub->vertices[i], sub->vertices[j]))
-			// 		{
-			// 			subEdgeNum += 1;
-			// 		}
-			// 	}
-			// }
-			// clock_t tmpend = clock();
-			// densityCheckTime += difftime(tmpend, tmpstart)/(double)CLOCKS_PER_SEC;
-
-
+			
 			/****************************/
 			
-			//int tempSubgraph[subgraphSize];
-			clock_t tmpstart = clock();
 			string adjMatStr = "";
 			adjMatStr.reserve(subgraphSize*subgraphSize/2 );
-			// for(i = 0; i < subgraphSize; i++)
-			// {
-			// 	subgraphDegree[subVertices[i]] = 0;
-			// 	tempSubgraph[i] = subVertices[i];
-			// }
-											
-			for(i = 0; i < maxSize; i++)
+			for (int i = 1; i < maxSize; ++i)
 			{
-				for(j = i+1; j < maxSize; j++)
+				adjMatStr += sub->verticesAdj[i];
+			}
+			for (int i = 0; i < adjMatStr.size(); ++i)
+			{
+				if (adjMatStr[i] == '1')
 				{
-					if ( isConnected(sub->vertices[i], sub->vertices[j]) )
-					{
-						subEdgeNum += 1;
-						//adjMatStr += "1"; 
-						adjMatStr.push_back('1');
-					}
-					else
-					{
-						//adjMatStr += "0";
-						adjMatStr.push_back('0');
-					}
+					subEdgeNum += 1;
 				}
 			}
-			clock_t tmpend = clock();
-			AdjStrTime += difftime(tmpend, tmpstart)/(double)CLOCKS_PER_SEC;
 			/**********************************/
 			
 			if (float(subEdgeNum)/maxSize < subgraphDensity)//check graph density
@@ -212,7 +212,7 @@ string Graph::GetTreeString(unsigned int* subVertices)
 	// }
 	// cout<<endl;
 	//Find the root, o
-	
+	cout<< "start"<<endl;
 	register int i,j;
 	int* tempSubgraph = new int[subgraphSize];
 	for (int i = 0; i < subgraphSize; ++i)
