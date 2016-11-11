@@ -1,2 +1,2 @@
 # FS2016
-Focus what you expect
+Focus on what you expect
