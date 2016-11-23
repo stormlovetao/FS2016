@@ -19,9 +19,11 @@
 float frequency_thr = 0;
 unsigned long long subgraph_THR = 0xffffffffffff;
 int* subgraphDegree;
+int* graphDegs;
 hash_map<char,int> AsciiToInt;
 hash_map<int,char> IntToAscii;
 hash_map<std::string,long long int> graphInt;
+hash_map<std::string,long long int> reordered_graphInt;
 hash_map<std::string,long long int> treeInt;
 using namespace std;
 
@@ -84,6 +86,7 @@ bool ReadData(const char *path) {
 
 
 	subgraphDegree = new int[graphSize + 1];
+	//graphDegs = new int[graphSize +1];
 	
 	g = new Graph(graphSize, subgraphSize);
 	while (!feof(inFile)) {
@@ -212,31 +215,31 @@ string calculateCam(string graphIn, int subgraphSize)
    
 
     register int i, j, index;
-    for(i = 0; i < subgraphSize; i++)
-    {
-        for (j = i+1; j<subgraphSize; j++)
-        {
-            index = j*(j-1)/2 +i;
-            if(graphIn[index] == '1')
-            {
-                tgraph[i*subgraphSize + j] = '1';
-                tgraph[j*subgraphSize + i] = '1';//undirected
-            }
-        }
-    }
-    // index = 0;
     // for(i = 0; i < subgraphSize; i++)
     // {
     //     for (j = i+1; j<subgraphSize; j++)
     //     {
+    //         index = j*(j-1)/2 +i;
     //         if(graphIn[index] == '1')
     //         {
     //             tgraph[i*subgraphSize + j] = '1';
     //             tgraph[j*subgraphSize + i] = '1';//undirected
     //         }
-    //         index++;
     //     }
     // }
+    index = 0;
+    for(i = 0; i < subgraphSize; i++)
+    {
+        for (j = i+1; j<subgraphSize; j++)
+        {
+            if(graphIn[index] == '1')
+            {
+                tgraph[i*subgraphSize + j] = '1';
+                tgraph[j*subgraphSize + i] = '1';//undirected
+            }
+            index++;
+        }
+    }
 
     int  n, m, v, k;
     unsigned nCanCode;
@@ -352,7 +355,7 @@ string subGetTreeString(int* subVertices, int root, string adjStr )
   			queue.pop_front();
   			for (int i = 0; i < subgraphSize; ++i)
   			{
-  				if (isConnected2(lookup[k], subVertices[i], adjStr) && used[i]==false)
+  				if (isConnected(lookup[k], subVertices[i], adjStr) && used[i]==false)
   				{
   					tree.addEdge(k, ind);
   					queue.push_back(ind);
@@ -391,31 +394,31 @@ string GetTreeCanStr(string adjStr, int subgraphSize)
 		subgraphDegree[i] = 0;
 		tempSubgraph[i] = i;
 	}
-	// for(i = 0; i < subgraphSize; i++)
-	// {
-	// 	for (j = i+1; j < subgraphSize; j++)
-	// 	{
-	// 		if(adjStr[ind] == '1')
-	// 		{
-	// 			subgraphDegree[i] += 1;
-	// 			subgraphDegree[j] += 1; //undirected!!
-	// 		}
-	// 		ind++;
-	// 	}
-	// }
-	//cout<<"start"<<endl;	
 	for(i = 0; i < subgraphSize; i++)
-    {
-        for (j = i+1; j<subgraphSize; j++)
-        {
-            ind = j*(j-1)/2 +i;
-            if(adjStr[ind] == '1')
-            {
-                subgraphDegree[i] += 1;
-                subgraphDegree[j] += 1;//undirected
-            }
-        }
-    }
+	{
+		for (j = i+1; j < subgraphSize; j++)
+		{
+			if(adjStr[ind] == '1')
+			{
+				subgraphDegree[i] += 1;
+				subgraphDegree[j] += 1; //undirected!!
+			}
+			ind++;
+		}
+	}
+	//cout<<"start"<<endl;	
+	// for(i = 0; i < subgraphSize; i++)
+ //    {
+ //        for (j = i+1; j<subgraphSize; j++)
+ //        {
+ //            ind = j*(j-1)/2 +i;
+ //            if(adjStr[ind] == '1')
+ //            {
+ //                subgraphDegree[i] += 1;
+ //                subgraphDegree[j] += 1;//undirected
+ //            }
+ //        }
+ //    }
 
     // for (int i = 0; i < subgraphSize; ++i)
     // {
@@ -456,7 +459,7 @@ string GetTreeCanStr(string adjStr, int subgraphSize)
 			//cout<<"d"<<deleted_node;
 			for (int i = 0; i < subgraphSize; ++i)
 			{
-				if (tempSubgraph[i]!=-1 && isConnected2(tempSubgraph[i], deleted_node, adjStr))
+				if (tempSubgraph[i]!=-1 && isConnected(tempSubgraph[i], deleted_node, adjStr))
 				{
 					subgraphDegree[tempSubgraph[i]] -= 1;
 				}
@@ -558,30 +561,18 @@ string GetTreeCanStr(string adjStr, int subgraphSize)
 
 }
 
+struct ordering {
+    bool operator ()(pair<int, int> const& a, 
+                     pair<int, int> const& b) {
+        return a.second > b.second;
+    }
+};
 
 
 /****************************************************************
 ****************************************************************/
 int main(int argc, char *argv[]) {
 
-	// for (int ini = 0; ini < 9; ini++)
- //    {
- //        char temp = '1'+ini;
- //        AsciiToInt[temp] = ini;
- //        IntToAscii[ini] = temp;
- //    }
- //    for (int ini = 0; ini < 26; ini++)
- //    {
- //        char temp = 'a'+ini;
- //        AsciiToInt[temp] = 9 + ini;
- //        IntToAscii[9+ini] = temp;
- //    }
- //    for (int ini = 0; ini < 26; ini++)
- //    {
- //        char temp = 'A'+ini;
- //        AsciiToInt[temp] = 35 + ini;
- //        IntToAscii[35+ini] = temp;
- //    }
 	for(int ini = 0; ini < 94; ini++)
 	{
 		char temp = '!' + ini;
@@ -699,11 +690,89 @@ int main(int argc, char *argv[]) {
 	//printf("after enumerate, everything is OK!!\n");
 	clock_t mainEndTime = clock();
 
-	//hash_map<std::string, long long int> degreeSeqCount;
 	hash_map<string, pair< vector<const string*>, long long int> > degreeSeqPair;
 	hash_map<string, pair< vector<const string*>, long long int> >::iterator itor;
 	cout<<"graphIntSize = "<<graphInt.size()<<endl;
+	hash_map<string, string> adjStr2degSeq;
+	hash_map<string, string>::iterator aditer; 
 	for(hash_map<std::string, long long int>::iterator it = graphInt.begin(); it!= graphInt.end(); it++)
+	{
+		int index = 0;
+		string adj = it->first;
+		//cout<<"adj: "<<adj<<endl;
+	    std::vector< pair<int, int> > nodeDegreeVec;
+	    for (i = 0; i < subgraphSize; ++i)
+	    {
+	    	nodeDegreeVec.push_back(make_pair(i, 0));
+	    }
+	    for(i = 0; i < subgraphSize; i++)
+	    {
+	        for(j = i+1; j<subgraphSize; j++)
+	        {
+	        	index = j*(j-1)/2+i;
+	            if(adj[index] == '1')
+	            {
+	                nodeDegreeVec[i].second += 1;
+	                nodeDegreeVec[j].second += 1;
+	            }
+	        }
+	    }
+	    sort(nodeDegreeVec.begin(), nodeDegreeVec.end(), ordering());
+	
+	    string reorderedAdj = "";
+	    reorderedAdj.reserve(subgraphSize*subgraphSize/2);
+
+	    for (int a = 0; a < subgraphSize; ++a)
+	    {
+	    	for(int b = a+1; b < subgraphSize; ++b)
+	    	{
+	    		i = nodeDegreeVec[a].first;
+	    		j = nodeDegreeVec[b].first;
+	    		if(i>j)
+	    		{
+	    			int temp = i;
+	    			i = j;
+	    			j = temp;
+	    		}
+	    		index = j*(j-1)/2+i;
+
+	    		if(adj[index] == '1')
+	    		{
+	    			reorderedAdj.push_back('1'); 
+	    		}
+	    		else
+	    			reorderedAdj.push_back('0');
+	    		//cout<<"a:"<<a<<" b:"<<b<<" i:"<<i<<" j:"<<j<<" index:"<<index<<" adj[index]:"<<adj[index]<<endl;
+	    	}
+	    }
+	    //cout<<"reorderedAdj: "<< reorderedAdj<<endl;
+	    hash_map<std::string, long long int>::iterator reitor = reordered_graphInt.find(reorderedAdj);
+	    string graphDegSeq = "";
+	    long long int tempCount = it->second;
+	    if (reitor == reordered_graphInt.end())
+	    {
+	    	reordered_graphInt[reorderedAdj] = tempCount;
+
+	    	// reitor = reordered_graphInt.find(reorderedAdj);
+	    	// const std::string *graphAdjMatStr = &(reitor->first);
+
+	    	graphDegSeq.reserve(subgraphSize);
+		    for(std::vector<pair<int, int> >::iterator it = nodeDegreeVec.begin(); it != nodeDegreeVec.end(); it++)
+		    {
+		    	int deg = it->second;
+		        graphDegSeq.push_back(IntToAscii.find(deg-1)->second); 
+		    }
+		    adjStr2degSeq[reorderedAdj] = graphDegSeq;
+	    }
+	    else
+	    {
+	    	reordered_graphInt[reorderedAdj] += tempCount;
+	    }
+
+	}
+	clock_t graphReorderTime = clock();
+	cout<<"reordered_graphIntSize = "<<reordered_graphInt.size()<<endl;
+	for(hash_map<std::string, long long int>::iterator it = reordered_graphInt.begin(); it!= reordered_graphInt.end(); it++)
 	{
 		
 		// add by Tao 2016-10-23, set the frequency_thr to be the size of biggest AdjString bin
@@ -711,16 +780,10 @@ int main(int argc, char *argv[]) {
 		{
 			frequency_thr = it->second;
 		}
-
 		const std::string *graphAdjMatStr = &(it->first);
-
-		//cout<< *graphAdjMatStr<<endl;
-		std::string graphDegSeq = graphDegreeSequence(*graphAdjMatStr, subgraphSize);
-		//cout<<"No problem"<<endl;
+		std::string graphDegSeq = adjStr2degSeq[*graphAdjMatStr];
 		long long int tempCount = it->second;
-		
 		itor = degreeSeqPair.find(graphDegSeq);
-
 		if( itor == degreeSeqPair.end())
 		{
 			vector<const string*> tmpstringvec;
@@ -734,9 +797,10 @@ int main(int argc, char *argv[]) {
 			(itor->second).first.push_back(graphAdjMatStr);
 			(itor->second).second += tempCount;
 		}
-
 	}
+
 	clock_t CalDegreeSeqTime = clock();
+	//frequency_thr = 185130;
 	cout<<"frequency_thr = "<< frequency_thr<<endl;
 	cout<<"degreeSeqPair.size = "<< degreeSeqPair.size()<<endl;
 	double TreeCam_time = 0, GraphCam_time = 0;
@@ -756,15 +820,18 @@ int main(int argc, char *argv[]) {
 			for(int iv = 0; iv < (itor->second).first.size(); iv++ )
 			{
 				string adjStr = *(((itor->second).first)[iv]);
+				cout<<"before GetTreeCanStr OK"<<endl;
+				cout<<adjStr<<endl;
 				string treeStr = GetTreeCanStr(adjStr, subgraphSize);//!!!!Here !!!! Need the new function
+				cout<<"treeStr"<<treeStr<<endl;
 				hash_map<std::string, long long int>::iterator iter = treeInt.find(treeStr);
 				if(iter == treeInt.end()) //BUG!! graphInt.end()->treeInt.end()
 				{
-					treeInt[treeStr] = graphInt.find(adjStr)->second;
+					treeInt[treeStr] = reordered_graphInt.find(adjStr)->second;
 				}
 				else
 				{
-					(iter->second) += graphInt.find(adjStr)->second;
+					(iter->second) += reordered_graphInt.find(adjStr)->second;
 				}
 			}
 			clock_t tmpend = clock();
@@ -775,7 +842,7 @@ int main(int argc, char *argv[]) {
 			clock_t tmpstart = clock();
 			for(int iv = 0; iv < (itor->second).first.size(); iv++ )
 			{
-
+				//cout<<"here"<<endl;
 				string tempCam = *(((itor->second).first)[iv]);
 				string cam = calculateCam(tempCam, subgraphSize);
 				callNautyCount += 1;
@@ -784,11 +851,11 @@ int main(int argc, char *argv[]) {
 	            if (it2 == finalGraph.end())
 	            {
 
-	                finalGraph[cam] = graphInt.find(tempCam)->second;
+	                finalGraph[cam] = reordered_graphInt.find(tempCam)->second;
 	            }
 	            else
 	            {
-	                (it2->second) += graphInt.find(tempCam)->second;
+	                (it2->second) += reordered_graphInt.find(tempCam)->second;
 	            }
 			}
 			clock_t tmpend = clock();
@@ -825,12 +892,13 @@ int main(int argc, char *argv[]) {
 	delete g;
 	//delete IsD;
 	delete subgraphDegree;
+	delete graphDegs;
 
 	clock_t endTime = clock();
 	main_time = difftime(mainEndTime, mainStartTime)/(double)CLOCKS_PER_SEC;
 	double total_time = difftime(endTime, startTime)/(double)CLOCKS_PER_SEC;
-
-	double degreeSeq_time = difftime(CalDegreeSeqTime, mainEndTime)/(double)CLOCKS_PER_SEC;
+	double graphReorder_time = difftime(graphReorderTime, mainEndTime)/(double)CLOCKS_PER_SEC;
+	double degreeSeq_time = difftime(CalDegreeSeqTime, graphReorderTime)/(double)CLOCKS_PER_SEC;
 
 
 	printf("\n===========RESULTS===========\n");
@@ -843,6 +911,7 @@ int main(int argc, char *argv[]) {
 	printf("\nTime Used for Enumerate:      %f\n", main_time); 
 	
 	printf("\nTotal Time Used: %f\n", total_time); 
+	printf("\ngraphReorder_time: %f\n", graphReorder_time);
 	printf("\ndegreeSeq_time: %f\n", degreeSeq_time);
 	printf("\nTreeCam_time: %f\n", TreeCam_time);
 	printf("\nGraphCam_time: %f\n", GraphCam_time);

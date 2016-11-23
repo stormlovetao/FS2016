@@ -7,7 +7,8 @@
 
 graph canon[MAXN * MAXM];
 extern int* subgraphDegree;
-//extern bool* IsD;
+extern int* graphDegs;
+
 extern unsigned long long subgraph_THR;
 extern float subgraphDensity;
 extern int* treeChildrenSize;
@@ -148,6 +149,12 @@ void Graph::Nexts(Subgraph *sub, int maxSize, int startChild) {//g->Nexts(sub, s
 			// {
 			// 	test_edgeNum += sub->verticesEdges[i];
 			// }
+			// cout<<"new instance:"<<endl;
+			// for (int i = 0; i < subgraphSize; ++i)
+			// {
+			// 	cout<< sub->vertices[i] << " ";
+			// }
+			// cout<<endl;
 
 			subgraphCounter++;
 			register int i,j;
@@ -599,15 +606,17 @@ int* Graph::getNeighbours(vertex v) {
 	return E[v];
 }
 
-
+bool compare(int a, int b)
+{
+	return (graphDegs[a] > graphDegs[b]);
+}
 
 /****************************************************************
 ****************************************************************/
 void Graph::Finalize(bool directed) {
 	register int i, j, max = 0;
 	vector<int>::iterator it;
-	vector<int> degs;
-	
+
 	E = new int*[nV+1];
 	degree = new int[nE];
 	int degInd = 0;
@@ -617,8 +626,9 @@ void Graph::Finalize(bool directed) {
 		it = unique(E_temp[i].begin(), E_temp[i].end());		
 		E_temp[i].resize(it - E_temp[i].begin());
 		
-		degs.push_back(E_temp[i].size());
-
+	
+		//graphDegs[i] = E_temp[i].size();
+		//sort(E_temp[i].begin(), E_temp[i].end(), compare);
 		if(max < E_temp[i].size())
 			max = E_temp[i].size();
 		
@@ -637,16 +647,6 @@ void Graph::Finalize(bool directed) {
 	}
 	maxDegree = max;
 	
-	// int *temp = new int[max+1];
-	// for(int jj = 0; jj < max; jj++) {
-	// 	temp[jj] = 0;	
-	// }
-	
-	// for(int jj =0; jj < degs.size(); jj++) {
-	// 	temp[degs[jj]]++;
-	// }
-
- //    delete []temp;
 
 	printf("Number of Nodes: %d\n", nV);
 	printf("Number of Edges: %d\n", nE);
