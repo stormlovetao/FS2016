@@ -14,6 +14,8 @@ extern float subgraphDensity;
 extern int* treeChildrenSize;
 extern string* BFSVec;
 
+extern bool directed;
+
 static DEFAULTOPTIONS(options);
 statsblk(stats);
 setword workspace[160*MAXM];
@@ -63,7 +65,6 @@ Subgraph::Subgraph(int subgraphSize, int maxSize, int graphSize) {//initialize =
 	childCounter = 0;
 	visited = new bool[graphSize+1];
 	vertices = new unsigned int[maxSize];
-	//verticesEdges = new unsigned int[maxSize];// Tao add on Nov. 9
 	verticesAdj = new string[maxSize];
 	children = new unsigned int[graphSize];
 	
@@ -86,7 +87,7 @@ void Subgraph::AddChild(int vertex) {
 }
 
 /****************************************************************
-This function is responsible for enumerating and partially classifying the subgraphs with 'quaT' (Quaternary Tree)
+This function is responsible for enumerating and partially classifying the subgraphs with 'AdjString' 
 ****************************************************************/
 void Graph::Nexts(Subgraph *sub, int maxSize, int startChild) {//g->Nexts(sub, subgraphSize, 0);
 
@@ -109,7 +110,6 @@ void Graph::Nexts(Subgraph *sub, int maxSize, int startChild) {//g->Nexts(sub, s
 		if(!sub->visited[N[j]]) {
 			sub->visited[N[j]] = true;
 			sub->AddChild(N[j]);//3 arrays: visited[154],vertices[4], children[154]
-			//sub->AddChildEdge(N(j)); //Tao add on Nov. 9
 			addedCounter++;
 		}
 	}
@@ -118,44 +118,32 @@ void Graph::Nexts(Subgraph *sub, int maxSize, int startChild) {//g->Nexts(sub, s
 	{
 		
 		sub->lastVertex = sub->vertices[sub->subgraphSize] = sub->children[c];
-		// for edges
-		// sub->verticesEdges[sub->subgraphSize] = 0;
-		// for (int i = 0; i < sub->subgraphSize; ++i)
-		// {
-		// 	if(isConnected(sub->vertices[i], sub->lastVertex))
-		// 	{
-		// 		sub->verticesEdges[sub->subgraphSize] += 1;
-		// 	}
-		// }
-		// for adjstr
 		sub->verticesAdj[sub->subgraphSize] = "";
 		sub->verticesAdj[sub->subgraphSize].reserve(sub->subgraphSize );
 		for (int i = 0; i < sub->subgraphSize; ++i)
 		{
-			if(isConnected(sub->vertices[i], sub->lastVertex))
+			if(isConnected(sub->vertices[i], sub->lastVertex) && isConnected(sub->lastVertex, sub->vertices[i])) // biconnected 
+			{
+				sub->verticesAdj[sub->subgraphSize].push_back('2');
+			}
+			else if(!isConnected(sub->vertices[i], sub->lastVertex) && !isConnected(sub->lastVertex, sub->vertices[i])) // unconnected
+			{
+				sub->verticesAdj[sub->subgraphSize].push_back('0');
+			}	
+			else if (isConnected(sub->vertices[i], sub->lastVertex) && !isConnected(sub->lastVertex, sub->vertices[i]))
 			{
 				sub->verticesAdj[sub->subgraphSize].push_back('1');
 			}
 			else
-				sub->verticesAdj[sub->subgraphSize].push_back('0');
+			{
+				sub->verticesAdj[sub->subgraphSize].push_back('3');
+			} // Tao, Feb. 17, 17
 		}
 
 		sub->subgraphSize++;
 
 		if((sub->subgraphSize == maxSize)&&(subgraphCounter < subgraph_THR))// useful
 		{
-			
-			// for (int i = 1; i < maxSize; ++i)
-			// {
-			// 	test_edgeNum += sub->verticesEdges[i];
-			// }
-			// cout<<"new instance:"<<endl;
-			// for (int i = 0; i < subgraphSize; ++i)
-			// {
-			// 	cout<< sub->vertices[i] << " ";
-			// }
-			// cout<<endl;
-
 			subgraphCounter++;
 			register int i,j;
 			int subEdgeNum = 0;
@@ -170,7 +158,7 @@ void Graph::Nexts(Subgraph *sub, int maxSize, int startChild) {//g->Nexts(sub, s
 			}
 			for (int i = 0; i < adjMatStr.size(); ++i)
 			{
-				if (adjMatStr[i] == '1')
+				if (adjMatStr[i] != '0') // should consider directed and undirected~
 				{
 					subEdgeNum += 1;
 				}
@@ -178,6 +166,7 @@ void Graph::Nexts(Subgraph *sub, int maxSize, int startChild) {//g->Nexts(sub, s
 			/**********************************/
 			
 			if (float(subEdgeNum)/maxSize < subgraphDensity)//check graph density
+			//if((!directed && float(2*subEdgeNum)/maxSize*(maxSize-1)<subgraphDensity ||(directed && float(subEdgeNum)/maxSize*(maxSize-1)<subgraphDensity))
 			{
 				
 				//std::string adjMatStr = GetAdjMatString(sub->vertices);
@@ -201,6 +190,8 @@ void Graph::Nexts(Subgraph *sub, int maxSize, int startChild) {//g->Nexts(sub, s
 		sub->lastVertex = sub->vertices[subgraphSize-1];
 		
 	}
+
+	
 
 	//Removing added children
 	for(int i = sub->childCounter - addedCounter; i < sub->childCounter; i++)

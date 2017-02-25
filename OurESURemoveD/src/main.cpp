@@ -85,20 +85,24 @@ bool ReadData(const char *path) {
 	if (!feof(inFile))
 		fscanf(inFile, "%d\n", &graphSize);	
 
-
+	printf("graphSize = %d\n", graphSize);
 	subgraphDegree = new int[graphSize + 1];
 	//graphDegs = new int[graphSize +1];
 	
 	g = new Graph(graphSize, subgraphSize);
+	
 	while (!feof(inFile)) {
 		fscanf(inFile, "%d %d\n", &i, &j);
 		if(i == j) continue;
 		g->addEdge(i, j);
+		
 		if(!directed)
+		{
 			g->addEdge(j, i);
+		}
 	}
 
-	
+
 
 	g->Finalize(directed);
 	fclose(inFile);
@@ -221,10 +225,18 @@ string calculateCam(string graphIn, int subgraphSize)
         for (j = i+1; j<subgraphSize; j++)
         {
             index = j*(j-1)/2 +i;
-            if(graphIn[index] == '1')
+            if(graphIn[index] == '2')
             {
                 tgraph[i*subgraphSize + j] = '1';
                 tgraph[j*subgraphSize + i] = '1';//undirected
+            }
+            else if(graphIn[index] == '1')
+            {
+            	tgraph[i*subgraphSize + j] = '1';
+            }
+            else if(graphIn[index] == '3')
+            {
+            	tgraph[j*subgraphSize + i] = '1';
             }
         }
     }
@@ -327,7 +339,7 @@ bool isConnected2(int i, int j, string adjStr)
 		b = i;
 	}
 	index = b*(b-1)/2 +a;
-	if(adjStr[index] == '1')
+	if(adjStr[index] != '0')
 		return TRUE;
 	else
 		return FALSE;
@@ -413,7 +425,7 @@ string GetTreeCanStr(string adjStr, int subgraphSize)
         for (j = i+1; j<subgraphSize; j++)
         {
             ind = j*(j-1)/2 +i;
-            if(adjStr[ind] == '1')
+            if(adjStr[ind] != '0')
             {
                 subgraphDegree[i] += 1;
                 subgraphDegree[j] += 1;//undirected
@@ -574,12 +586,13 @@ struct ordering {
 ****************************************************************/
 int main(int argc, char *argv[]) {
 
-	for(int ini = 0; ini < 94; ini++)
+	for(int ini = -1; ini < 93; ini++)
 	{
 		char temp = '!' + ini;
 		AsciiToInt[temp] = ini;
 		IntToAscii[ini] = temp;
 	}
+
 
 
 	double total_random_time = 0 , main_time;
@@ -656,7 +669,7 @@ int main(int argc, char *argv[]) {
 		}
     } while (next_option != -1);
     cout<<"subgraph_THR = " << subgraph_THR<<endl;
-    directed = false;//Tao 2016 Jun 25, only work on undirected graph now.
+    //directed = false;//Tao 2016 Jun 25, only work on undirected graph now.
 
 	if (input_filename == NULL) {
 		fprintf(stderr, "Input Argument Error: Please specify an input filename using \"-i <FILE NAME>\".\n");
@@ -685,10 +698,10 @@ int main(int argc, char *argv[]) {
 	g->subgraphCounter = 0;
 	g->notClassSubCounter = 0;
 	clock_t mainStartTime = clock();
-	//printf("before enumerate, everything is OK!\n");
+	printf("before enumerate, everything is OK!\n");
 	Enumerate();
 
-	//printf("after enumerate, everything is OK!!\n");
+	printf("after enumerate, everything is OK!!\n");
 	clock_t mainEndTime = clock();
 
 	hash_map<string, pair< vector<const string*>, long long int> > degreeSeqPair;
@@ -719,18 +732,29 @@ int main(int argc, char *argv[]) {
 	        for(j = i+1; j<subgraphSize; j++)
 	        {
 	        	index = j*(j-1)/2+i;
-	            if(adj[index] == '1')
+	            if(adj[index] == '2') //Tao modified on Feb. 19 2017
 	            {
 	                nodeDegreeVec[i].second += 1;
 	                nodeDegreeVec[j].second += 1;
+	            }
+	            else if(adj[index] == '1')// i point to j, but j doesn't point to i
+	            {
+	            	nodeDegreeVec[i].second += 1; //add 1 to outdegree of i
+	            }
+	            else if(adj[index] == '3') // i doesn't point to j, but j point to i
+	            {
+	            	nodeDegreeVec[j].second += 1;
 	            }
 	        }
 	    }
 	    string reorderedAdj = "";
 
+	  
    
 	    sort(nodeDegreeVec.begin(), nodeDegreeVec.end(), ordering());
 	
+		
+
 	    if(it->second > 0)
 	    {
 		    reorderedAdj.reserve(subgraphSize*subgraphSize/2);
@@ -746,22 +770,59 @@ int main(int argc, char *argv[]) {
 		    			int temp = i;
 		    			i = j;
 		    			j = temp;
-		    		}
-		    		index = j*(j-1)/2+i;
+		    			index = j*(j-1)/2+i;
+		    			if(adj[index] == '0') // Tao modified on Feb 19 2017
+			    		{
+			    			reorderedAdj.push_back('0'); 
+			    		}
+			    		else if(adj[index] == '2')
+			    		{
+			    			reorderedAdj.push_back('2');
+			    		}
+			    		else if(adj[index] == '1')
+			    		{
+			    			reorderedAdj.push_back('1');
+			    		}
+			    		else if(adj[index] == '3')
+			    		{
+			    			reorderedAdj.push_back('3');
+			    		}
+			    		else
+		    				cout<<"NOT possible! "<< adj[index]<<endl;
 
-		    		if(adj[index] == '1')
-		    		{
-		    			reorderedAdj.push_back('1'); 
 		    		}
 		    		else
-		    			reorderedAdj.push_back('0');
+		    		{
+		    			index = j*(j-1)/2+i;
+		    			if(adj[index] == '0') // Tao modified on Feb 19 2017
+			    		{
+			    			reorderedAdj.push_back('0'); 
+			    		}
+			    		else if(adj[index] == '2')
+			    		{
+			    			reorderedAdj.push_back('2');
+			    		}
+			    		else if(adj[index] == '1')
+			    		{
+			    			reorderedAdj.push_back('3');
+			    		}
+			    		else if(adj[index] == '3')
+			    		{
+			    			reorderedAdj.push_back('1');
+			    		}
+			    		else
+		    				cout<<"NOT possible! "<< adj[index]<<endl;
+
+		    		}
+		    		
 		    		//cout<<"a:"<<a<<" b:"<<b<<" i:"<<i<<" j:"<<j<<" index:"<<index<<" adj[index]:"<<adj[index]<<endl;
 		    	}
 		    }
 		}// end if
 		else
 		{
-			reorderedAdj = adj;
+			cout<<"no way"<<endl;
+			//reorderedAdj = adj;
 		}
 		
 		//reorderedAdj = adj;
@@ -771,21 +832,29 @@ int main(int argc, char *argv[]) {
 	    //cout<<"reorderedAdj: "<< reorderedAdj<<endl;
 	    hash_map<std::string, long long int>::iterator reitor = reordered_graphInt.find(reorderedAdj);
 	    string graphDegSeq = "";
+
 	    long long int tempCount = it->second;
+	 
 	    if (reitor == reordered_graphInt.end())
 	    {
+
+	    	//cout<<reorderedAdj<<endl;
+
 	    	reordered_graphInt[reorderedAdj] = tempCount;
 
 	    	// reitor = reordered_graphInt.find(reorderedAdj);
 	    	// const std::string *graphAdjMatStr = &(reitor->first);
-
-	    	graphDegSeq.reserve(subgraphSize);
+	    	
+	    	//graphDegSeq.reserve(subgraphSize);
+	    
 		    for(std::vector<pair<int, int> >::iterator it3 = nodeDegreeVec.begin(); it3 != nodeDegreeVec.end(); it3++)
 		    {
 		    	int deg = it3->second;
+		    	
 		        graphDegSeq.push_back(IntToAscii.find(deg-1)->second); 
 		    }
 		    adjStr2degSeq[reorderedAdj] = graphDegSeq;
+
 	    }
 	    else
 	    {
@@ -823,7 +892,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	clock_t CalDegreeSeqTime = clock();
-	//frequency_thr = 185130;
+	frequency_thr = 0;
 	cout<<"frequency_thr = "<< frequency_thr<<endl;
 	cout<<"degreeSeqPair.size = "<< degreeSeqPair.size()<<endl;
 	double TreeCam_time = 0, GraphCam_time = 0;
@@ -836,7 +905,7 @@ int main(int argc, char *argv[]) {
 		}
 		//cout << itor->first<<endl;
 		//add Tree part here!!! 2016-10-24
-		if(isTree(itor->first, subgraphSize))
+		if(isTree(itor->first, subgraphSize) && !directed)
 		{
 			clock_t tmpstart = clock();
 			//cout<< "Tree: " << itor->first<<"  "<< (itor->second).second<<endl;

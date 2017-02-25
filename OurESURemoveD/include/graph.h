@@ -15,9 +15,8 @@ class Subgraph {
 public:
 	unsigned int *children;
 	bool *visited;
-	unsigned int *vertices;//
-	//unsigned int *verticesEdges;// Tao add : save added edges for each newly added vertice
-	string* verticesAdj;
+	unsigned int *vertices;
+	string* verticesAdj; //Tao add
 	unsigned int lastVertex;
 	long childCounter;
 	int subgraphSize;

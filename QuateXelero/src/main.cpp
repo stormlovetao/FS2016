@@ -56,7 +56,7 @@ bool ReadData(const char *path, int numRandomGraphs) {
 	
 	if (!feof(inFile))
 		fscanf(inFile, "%d\n", &graphSize);	
-	
+	printf("graphSize = %d", graphSize);
 	g = new Graph(graphSize, subgraphSize);
 	while (!feof(inFile)) {
 		fscanf(inFile, "%d %d\n", &i, &j);
