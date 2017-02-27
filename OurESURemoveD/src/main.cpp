@@ -581,7 +581,9 @@ struct ordering {
     }
 };
 
-
+ofstream outfile("instances.txt"); 
+ofstream outfile2("reorderAdj.txt");
+ofstream outfile3("Cam.txt");
 /****************************************************************
 ****************************************************************/
 int main(int argc, char *argv[]) {
@@ -621,6 +623,8 @@ int main(int argc, char *argv[]) {
 
     int verbose = 0;
     strcpy(output_directory, "result");
+
+    // Tao add Feb 25, 2017
 
     program_name = argv[0];
     do {
@@ -826,7 +830,8 @@ int main(int argc, char *argv[]) {
 		}
 		
 		//reorderedAdj = adj;
-		  
+		 //write adj and reorderdAdj;
+		outfile2 << adj << "\t" << reorderedAdj<<endl;
 
 		
 	    //cout<<"reorderedAdj: "<< reorderedAdj<<endl;
@@ -892,6 +897,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	clock_t CalDegreeSeqTime = clock();
+	cout<<"frequency_thr = "<< frequency_thr<<endl;
 	frequency_thr = 0;
 	cout<<"frequency_thr = "<< frequency_thr<<endl;
 	cout<<"degreeSeqPair.size = "<< degreeSeqPair.size()<<endl;
@@ -903,9 +909,12 @@ int main(int argc, char *argv[]) {
 		{
 			continue;
 		}
+
+
 		//cout << itor->first<<endl;
 		//add Tree part here!!! 2016-10-24
-		if(isTree(itor->first, subgraphSize) && !directed)
+		// shut off the tree part in exp. Feb. 25, 2017
+		if(0 && isTree(itor->first, subgraphSize) && !directed)
 		{
 			clock_t tmpstart = clock();
 			//cout<< "Tree: " << itor->first<<"  "<< (itor->second).second<<endl;
@@ -949,9 +958,16 @@ int main(int argc, char *argv[]) {
 	            {
 	                (it2->second) += reordered_graphInt.find(tempCam)->second;
 	            }
+
+
+	            //output tempCam and cam
+				outfile3 << tempCam << "\t" <<cam<<endl;
+
 			}
 			clock_t tmpend = clock();
 			GraphCam_time += (difftime(tmpend, tmpstart)/(double)CLOCKS_PER_SEC);
+
+
 		}
 	}
 
@@ -980,7 +996,6 @@ int main(int argc, char *argv[]) {
 	subgraphCounterMain = g->subgraphCounter;
 	enumerated_class = graph_class + tree_class;
 
-	
 	delete g;
 	//delete IsD;
 	delete subgraphDegree;
@@ -1012,5 +1027,6 @@ int main(int argc, char *argv[]) {
 	
 	//printf("Time for density check: %f\n", densityCheckTime);
 	//printf("Time for adjStr: %f\n", AdjStrTime);
+	outfile.close();
 	return 0;
 }

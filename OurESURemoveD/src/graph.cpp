@@ -1,7 +1,8 @@
 #include "graph.h"
-
+#include <string>
 #include <time.h>
-
+#include <iostream>
+#include <fstream>
 #include <math.h>
 #include "MyTree.h"
 
@@ -20,7 +21,7 @@ static DEFAULTOPTIONS(options);
 statsblk(stats);
 setword workspace[160*MAXM];
 
-
+extern ofstream outfile;
 
 int idxID;
 unsigned long head;
@@ -179,7 +180,18 @@ void Graph::Nexts(Subgraph *sub, int maxSize, int startChild) {//g->Nexts(sub, s
 				{
 					(iter->second) += 1;
 				}
-				
+
+				std::string outline = "";
+				outline += adjMatStr;
+				outline += "\t";
+				for (int i = 0; i < maxSize; ++i)
+				{
+
+					outline += std::to_string(sub->vertices[i]);
+					outline += "\t";
+				}
+				outline += "\n";
+				outfile << outline;
 			}	
 
 		}
