@@ -709,7 +709,7 @@ int main(int argc, char *argv[]) {
 	cout<<"graphIntSize = "<<graphInt.size()<<endl;
 	hash_map<string, string> adjStr2degSeq;
 	hash_map<string, string>::iterator aditer; 
-	string graphIntOut_filename = "graphInt_size_"+std::to_string(subgraphSize)+".txt";
+	// string graphIntOut_filename = "graphInt_size_"+std::to_string(subgraphSize)+".txt";
 	// ofstream graphIntOut;
 	// graphIntOut.open(graphIntOut_filename);
 	// for(hash_map<std::string, long long int>::iterator it = graphInt.begin(); it!= graphInt.end(); it++)
@@ -892,7 +892,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	clock_t CalDegreeSeqTime = clock();
-	frequency_thr = 0;
+	//frequency_thr = 0;
 	cout<<"frequency_thr = "<< frequency_thr<<endl;
 	cout<<"degreeSeqPair.size = "<< degreeSeqPair.size()<<endl;
 	double TreeCam_time = 0, GraphCam_time = 0;
@@ -955,6 +955,7 @@ int main(int argc, char *argv[]) {
 		}
 	}
 
+	ofstream frequentCams("frequentCams.txt");
 	//count graph part
 	int graph_class = 0, tree_class = 0;
 	for(hash_map<std::string, long long int>::iterator it = finalGraph.begin(); it!= finalGraph.end(); it++)
@@ -962,6 +963,7 @@ int main(int argc, char *argv[]) {
 		if (it->second >= frequency_thr)
 		{
 			graph_class += 1;
+			frequentCams<<it->first<<"\t"<<it->second<<endl;
 		}
 	}	
 
@@ -980,7 +982,7 @@ int main(int argc, char *argv[]) {
 	subgraphCounterMain = g->subgraphCounter;
 	enumerated_class = graph_class + tree_class;
 
-	
+	frequentCams.close();
 	delete g;
 	//delete IsD;
 	delete subgraphDegree;
