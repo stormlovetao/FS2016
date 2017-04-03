@@ -581,9 +581,9 @@ struct ordering {
     }
 };
 
-ofstream outfile("instances.txt"); 
-ofstream outfile2("reorderAdj.txt");
-ofstream outfile3("Cam.txt");
+ofstream outfile("./high_order/Exp/size_5/instances.txt"); 
+ofstream outfile2("./high_order/Exp/size_5/reorderAdj.txt");
+ofstream outfile3("./high_order/Exp/size_5/Cam.txt");
 /****************************************************************
 ****************************************************************/
 int main(int argc, char *argv[]) {
