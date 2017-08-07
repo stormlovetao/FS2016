@@ -6,7 +6,8 @@ PROGRAM=OurESU
 SRC=src/main.cpp\
     src/graph.cpp\
     src/ZeroOneTree.cpp\
-    src/MyTree.cpp
+    src/MyTree.cpp\
+    src/randomGenerator.cpp
     
 
 OBJ=$(SRC:.cpp=.o)

@@ -44,11 +44,11 @@ public:
 	long long unsigned int* ID;
 	//QTree* quaT;
 	double printingTime;
-	void Nexts(Subgraph *sub, int maxSize, int startChild);//extends the subgraph sub
+	void Nexts(Subgraph *sub, int maxSize, int startChild, int v);//extends the subgraph sub
     void  setPath(char *path);
 	void addEdgeAdjMat(vertex u, vertex v);
-	
-	
+	void deleteEdgeAdjMat(vertex u, vertex v);
+	void swapEdge(vertex v, int ind, vertex u);
 	void  addEdge(vertex u, vertex v);
 	int* getNeighbours(vertex v);
 	bool isConnected(vertex u, vertex v);
@@ -60,13 +60,14 @@ public:
 	std::string GetTreeString(unsigned int* subVertices);
 	std::string GetAdjMatString(unsigned int* subVertices);
 	std::string subGetTreeString(unsigned int* subVertices, int root, int rootInd );
-	
+	int get_vertex();
 
 	int M;
 	long long unsigned subgraphCounter;
 	long long unsigned notClassSubCounter;
 	int nV;
 	int subgraphSize;
+	long long unsigned* subgraphCounter_v;
 	
 private:
     FILE *am;

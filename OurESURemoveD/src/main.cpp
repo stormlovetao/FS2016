@@ -10,14 +10,14 @@
 #include <fstream>
 #include <time.h>
 #include <list>
-
+#include "randomGenerator.h"
 #include "MyTree.h"
 #include <ext/hash_map>
 
 #define EPOC 10
 //#define Debug
 
-float frequency_thr = 0;
+float frequency_thr = -1;
 unsigned long long subgraph_THR = 0xffffffffffff;
 int* subgraphDegree;
 int* graphDegs;
@@ -123,7 +123,7 @@ void Enumerate() {
 #ifdef Debug
 		printf("+ Exploring Node %d ...\n", v);
 #endif Debug
-
+	
 		// if(g->subgraphCounter >= 100)
 		// 	break;//useful
 
@@ -137,8 +137,9 @@ void Enumerate() {
 		sub->visited[v] = true;
 		//cout << "Before Nexts, everything is OK"<<endl;
 		//g->Nexts(sub, subgraphSize, 0, g->quaT->root); 
-		g->Nexts(sub, subgraphSize, 0);
-
+		g->subgraphCounter_v[v] = 0;
+		g->Nexts(sub, subgraphSize, 0, v);
+		
 		sub->visited[v] = false;
 		
 	}
@@ -581,9 +582,112 @@ struct ordering {
     }
 };
 
-ofstream outfile("./high_order/Exp/size_5/instances.txt"); 
-ofstream outfile2("./high_order/Exp/size_5/reorderAdj.txt");
-ofstream outfile3("./high_order/Exp/size_5/Cam.txt");
+
+string ReorderAdj(string adj, std::vector< pair<int, int> > &nodeDegreeVec)
+{
+	int index = 0, i, j;
+		//cout<<"adj: "<<adj<<endl;
+    
+    for (int i = 0; i < subgraphSize; ++i)
+    {
+    	nodeDegreeVec.push_back(make_pair(i, 0));
+    }
+    for(int i = 0; i < subgraphSize; i++)
+    {
+        for(int j = i+1; j<subgraphSize; j++)
+        {
+        	index = j*(j-1)/2+i;
+            if(adj[index] == '2') //Tao modified on Feb. 19 2017
+            {
+                nodeDegreeVec[i].second += 1;
+                nodeDegreeVec[j].second += 1;
+            }
+            else if(adj[index] == '1')// i point to j, but j doesn't point to i
+            {
+            	nodeDegreeVec[i].second += 1; //add 1 to outdegree of i
+            }
+            else if(adj[index] == '3') // i doesn't point to j, but j point to i
+            {
+            	nodeDegreeVec[j].second += 1;
+            }
+        }
+    }
+    string reorderedAdj = "";
+
+
+    sort(nodeDegreeVec.begin(), nodeDegreeVec.end(), ordering());
+
+
+
+    reorderedAdj.reserve(subgraphSize*subgraphSize/2);
+
+    for (int a = 1; a < subgraphSize; ++a)
+    {
+    	for(int b = 0; b < a; ++b)
+    	{
+    		i = nodeDegreeVec[a].first;
+    		j = nodeDegreeVec[b].first;
+    		if(i>j)
+    		{
+    			int temp = i;
+    			i = j;
+    			j = temp;
+    			index = j*(j-1)/2+i;
+    			if(adj[index] == '0') // Tao modified on Feb 19 2017
+	    		{
+	    			reorderedAdj.push_back('0'); 
+	    		}
+	    		else if(adj[index] == '2')
+	    		{
+	    			reorderedAdj.push_back('2');
+	    		}
+	    		else if(adj[index] == '1')
+	    		{
+	    			reorderedAdj.push_back('1');
+	    		}
+	    		else if(adj[index] == '3')
+	    		{
+	    			reorderedAdj.push_back('3');
+	    		}
+	    		else
+    				cout<<"NOT possible! "<< adj[index]<<endl;
+
+    		}
+    		else
+    		{
+    			index = j*(j-1)/2+i;
+    			if(adj[index] == '0') // Tao modified on Feb 19 2017
+	    		{
+	    			reorderedAdj.push_back('0'); 
+	    		}
+	    		else if(adj[index] == '2')
+	    		{
+	    			reorderedAdj.push_back('2');
+	    		}
+	    		else if(adj[index] == '1')
+	    		{
+	    			reorderedAdj.push_back('3');
+	    		}
+	    		else if(adj[index] == '3')
+	    		{
+	    			reorderedAdj.push_back('1');
+	    		}
+	    		else
+    				cout<<"NOT possible! "<< adj[index]<<endl;
+
+    		}
+    		
+    		//cout<<"a:"<<a<<" b:"<<b<<" i:"<<i<<" j:"<<j<<" index:"<<index<<" adj[index]:"<<adj[index]<<endl;
+    	}
+    }
+	
+	return reorderedAdj;
+}
+
+
+// ofstream outfile("./high_order/Exp/size_5/instances.txt"); 
+// ofstream outfile2("./high_order/Exp/size_5/reorderAdj.txt");
+// ofstream outfile3("./high_order/Exp/size_5/Cam.txt");
 /****************************************************************
 ****************************************************************/
 int main(int argc, char *argv[]) {
@@ -595,7 +699,7 @@ int main(int argc, char *argv[]) {
 		IntToAscii[ini] = temp;
 	}
 
-
+	generator gen;
 
 	double total_random_time = 0 , main_time;
 	clock_t start_random_time, end_random_time;
@@ -708,131 +812,30 @@ int main(int argc, char *argv[]) {
 	printf("after enumerate, everything is OK!!\n");
 	clock_t mainEndTime = clock();
 
+
+
 	hash_map<string, pair< vector<const string*>, long long int> > degreeSeqPair;
 	hash_map<string, pair< vector<const string*>, long long int> >::iterator itor;
 	cout<<"graphIntSize = "<<graphInt.size()<<endl;
 	hash_map<string, string> adjStr2degSeq;
 	hash_map<string, string>::iterator aditer; 
 	string graphIntOut_filename = "graphInt_size_"+std::to_string(subgraphSize)+".txt";
-	// ofstream graphIntOut;
-	// graphIntOut.open(graphIntOut_filename);
-	// for(hash_map<std::string, long long int>::iterator it = graphInt.begin(); it!= graphInt.end(); it++)
-	// {
-	// 	graphIntOut<<it->second<<endl;
-	// }
-	// graphIntOut.close();
+	/*** 
+	reformat graphInt based on node degree, and
+	make a map from reordered graphInt to degree sequence, adjStr2degSeq
+	***/
+	hash_map<string, string> adjstr2adjstr;
 	for(hash_map<std::string, long long int>::iterator it = graphInt.begin(); it!= graphInt.end(); it++)
 	{
-		int index = 0;
 		string adj = it->first;
-		//cout<<"adj: "<<adj<<endl;
-	    std::vector< pair<int, int> > nodeDegreeVec;
-	    for (i = 0; i < subgraphSize; ++i)
-	    {
-	    	nodeDegreeVec.push_back(make_pair(i, 0));
-	    }
-	    for(i = 0; i < subgraphSize; i++)
-	    {
-	        for(j = i+1; j<subgraphSize; j++)
-	        {
-	        	index = j*(j-1)/2+i;
-	            if(adj[index] == '2') //Tao modified on Feb. 19 2017
-	            {
-	                nodeDegreeVec[i].second += 1;
-	                nodeDegreeVec[j].second += 1;
-	            }
-	            else if(adj[index] == '1')// i point to j, but j doesn't point to i
-	            {
-	            	nodeDegreeVec[i].second += 1; //add 1 to outdegree of i
-	            }
-	            else if(adj[index] == '3') // i doesn't point to j, but j point to i
-	            {
-	            	nodeDegreeVec[j].second += 1;
-	            }
-	        }
-	    }
-	    string reorderedAdj = "";
+		std::vector< pair<int, int> > nodeDegreeVec;
+		string reorderedAdj = ReorderAdj(adj, nodeDegreeVec);
+		cout<<adj<<" -> "<<reorderedAdj<<endl;
 
-	  
-   
-	    sort(nodeDegreeVec.begin(), nodeDegreeVec.end(), ordering());
-	
-		
-
-	    if(it->second > 0)
-	    {
-		    reorderedAdj.reserve(subgraphSize*subgraphSize/2);
-
-		    for (int a = 1; a < subgraphSize; ++a)
-		    {
-		    	for(int b = 0; b < a; ++b)
-		    	{
-		    		i = nodeDegreeVec[a].first;
-		    		j = nodeDegreeVec[b].first;
-		    		if(i>j)
-		    		{
-		    			int temp = i;
-		    			i = j;
-		    			j = temp;
-		    			index = j*(j-1)/2+i;
-		    			if(adj[index] == '0') // Tao modified on Feb 19 2017
-			    		{
-			    			reorderedAdj.push_back('0'); 
-			    		}
-			    		else if(adj[index] == '2')
-			    		{
-			    			reorderedAdj.push_back('2');
-			    		}
-			    		else if(adj[index] == '1')
-			    		{
-			    			reorderedAdj.push_back('1');
-			    		}
-			    		else if(adj[index] == '3')
-			    		{
-			    			reorderedAdj.push_back('3');
-			    		}
-			    		else
-		    				cout<<"NOT possible! "<< adj[index]<<endl;
-
-		    		}
-		    		else
-		    		{
-		    			index = j*(j-1)/2+i;
-		    			if(adj[index] == '0') // Tao modified on Feb 19 2017
-			    		{
-			    			reorderedAdj.push_back('0'); 
-			    		}
-			    		else if(adj[index] == '2')
-			    		{
-			    			reorderedAdj.push_back('2');
-			    		}
-			    		else if(adj[index] == '1')
-			    		{
-			    			reorderedAdj.push_back('3');
-			    		}
-			    		else if(adj[index] == '3')
-			    		{
-			    			reorderedAdj.push_back('1');
-			    		}
-			    		else
-		    				cout<<"NOT possible! "<< adj[index]<<endl;
-
-		    		}
-		    		
-		    		//cout<<"a:"<<a<<" b:"<<b<<" i:"<<i<<" j:"<<j<<" index:"<<index<<" adj[index]:"<<adj[index]<<endl;
-		    	}
-		    }
-		}// end if
-		else
-		{
-			cout<<"no way"<<endl;
-			//reorderedAdj = adj;
-		}
-		
 		//reorderedAdj = adj;
 		 //write adj and reorderdAdj;
-		outfile2 << adj << "\t" << reorderedAdj<<endl;
-
+		//outfile2 << adj << "\t" << reorderedAdj<<endl;
+		adjstr2adjstr[adj] = reorderedAdj; //Apr.3 2017, map adj to reordered adj
 		
 	    //cout<<"reorderedAdj: "<< reorderedAdj<<endl;
 	    hash_map<std::string, long long int>::iterator reitor = reordered_graphInt.find(reorderedAdj);
@@ -869,13 +872,20 @@ int main(int argc, char *argv[]) {
 	}
 	clock_t graphReorderTime = clock();
 	cout<<"reordered_graphIntSize = "<<reordered_graphInt.size()<<endl;
+
+
+	/*** 
+	make the degree sequence bin, degreeSeqPair
+	get the default frequency threshold
+	***/
+	int tmp_frequency_thr = 0;
 	for(hash_map<std::string, long long int>::iterator it = reordered_graphInt.begin(); it!= reordered_graphInt.end(); it++)
 	{
 		
 		// add by Tao 2016-10-23, set the frequency_thr to be the size of biggest AdjString bin
-		if(frequency_thr < it->second)
+		if(tmp_frequency_thr < it->second)
 		{
-			frequency_thr = it->second;
+			tmp_frequency_thr = it->second;
 		}
 		const std::string *graphAdjMatStr = &(it->first);
 		std::string graphDegSeq = adjStr2degSeq[*graphAdjMatStr];
@@ -897,10 +907,18 @@ int main(int argc, char *argv[]) {
 	}
 
 	clock_t CalDegreeSeqTime = clock();
+	if (frequency_thr == -1)
+	{
+		frequency_thr = tmp_frequency_thr; // if user doesn't define, use default setting
+	}
 	cout<<"frequency_thr = "<< frequency_thr<<endl;
-	frequency_thr = 0;
-	cout<<"frequency_thr = "<< frequency_thr<<endl;
+
 	cout<<"degreeSeqPair.size = "<< degreeSeqPair.size()<<endl;
+	cout<<degreeSeqPair.begin()->first<<endl;
+	/*** 
+	Calculate Cam string 
+	***/
+	hash_map<string, string>  adjstr2cam; //Apr. 3 2017, creat map from adjacent string to cam string
 	double TreeCam_time = 0, GraphCam_time = 0;
 	hash_map<string, long long int> finalGraph;
 	for(itor = degreeSeqPair.begin(); itor != degreeSeqPair.end(); itor++)
@@ -946,6 +964,7 @@ int main(int argc, char *argv[]) {
 				//cout<<"here"<<endl;
 				string tempCam = *(((itor->second).first)[iv]);
 				string cam = calculateCam(tempCam, subgraphSize);
+				adjstr2cam[tempCam] = cam; //Apr. 3 2017, creat map from adjacent string to cam string
 				callNautyCount += 1;
 
 				hash_map<std::string, long long int>::iterator it2 =  finalGraph.find(cam);
@@ -961,7 +980,7 @@ int main(int argc, char *argv[]) {
 
 
 	            //output tempCam and cam
-				outfile3 << tempCam << "\t" <<cam<<endl;
+				//outfile3 << tempCam << "\t" <<cam<<endl;
 
 			}
 			clock_t tmpend = clock();
@@ -973,28 +992,178 @@ int main(int argc, char *argv[]) {
 
 	//count graph part
 	int graph_class = 0, tree_class = 0;
+	cout<< "finalGraph.size() = "<<finalGraph.size()<<endl;
+	hash_map<string, long long int> frequentFinalGraph;
 	for(hash_map<std::string, long long int>::iterator it = finalGraph.begin(); it!= finalGraph.end(); it++)
 	{
 		if (it->second >= frequency_thr)
 		{
 			graph_class += 1;
+			frequentFinalGraph[it->first] = it->second;
 		}
 	}	
-
+	cout<<"graph_class = "<<graph_class<<endl;
+	cout<< "frequentFinalGraph.size() = "<<frequentFinalGraph.size()<<endl;
 	//count tree part
-	hash_map<string, long long int> finalTree;
+	hash_map<string, long long int> frequentFinalTree;
 	for(hash_map<std::string, long long int>::iterator it = treeInt.begin(); it!= treeInt.end(); it++)
 	{
 		if (it->second >= frequency_thr)
 		{
 			tree_class += 1;
-			//cout<< it->first<<"  "<< it->second<<endl;
+			frequentFinalTree[it->first] = it->second;
 		}
 	}
 
 
+
+
 	subgraphCounterMain = g->subgraphCounter;
 	enumerated_class = graph_class + tree_class;
+
+
+
+	//initializing random graphs
+	srand(time(NULL));
+	isRand = true;
+	long long unsigned AvgTotRndSubCounter = 0;
+	long long unsigned AvgRndSubCounter = 0;
+	printf("\nNumber of Random Graphs: %d\n", num_random_graphs);
+	double * mean;
+	double * var;
+	double* Score;
+	int class_num = graph_class;
+	double * C_main = new double[class_num];
+	
+	int ind = 0;
+	for (hash_map<string, long long int>::iterator iter = frequentFinalGraph.begin(); iter != frequentFinalGraph.end(); ++iter)
+	{
+		C_main[ind] = iter->second;
+		ind+=1;
+	}
+	mean = new double[class_num];
+	var = new double[class_num];
+	Score = new double[class_num];
+	for (int i = 0; i < class_num; ++i)
+	{
+		mean[i] = 0;
+		var[i] = 0;
+		Score[i] = 0;
+	}
+	int** rand_stat = new int*[num_random_graphs+1];
+	for (int i = 1; i <= num_random_graphs; ++i)
+	{
+		rand_stat[i] = new int[class_num];
+	}
+
+
+	for (i = 1; i <= num_random_graphs; i++) {
+		graphInt.clear();
+		gen.genRandGraph_Edge3(g);
+		g->subgraphCounter = 0;
+		g->notClassSubCounter = 0;
+		clock_t randStartTime = clock();
+		Enumerate(); //after enumeration, subgraphs are put into graphInt
+
+		clock_t randEndTime = clock();
+		total_random_time += difftime(randEndTime, randStartTime);
+		hash_map< string, int > tmp_cam;
+		for(hash_map<std::string, long long int>::iterator it = graphInt.begin(); it!= graphInt.end(); it++)
+		{
+			string adj = it->first;
+			long long int adj_count = it->second;
+			std::vector< pair<int, int> > nodeDegreeVec;
+			string re_adj, cam = "";
+			hash_map<string, string>::iterator iter_i, iter_j;
+			iter_i = adjstr2cam.find(adj); // does adj have cam already?
+			if (iter_i != adjstr2cam.end()) // if yes
+			{
+				cam = adjstr2cam[adj];
+			}
+			else
+			{
+				iter_j = adjstr2adjstr.find(adj); // reordered adjstr?
+				if (iter_j == adjstr2adjstr.end()) // not been reordered
+				{
+					string reorderedAdj = ReorderAdj(adj, nodeDegreeVec);
+					adjstr2adjstr[adj] = reorderedAdj;
+					if(adjstr2cam.find(reorderedAdj) != adjstr2cam.end()) // have cam
+					{
+						cam = adjstr2cam[reorderedAdj];
+					}
+					else // have to calculate cam
+					{
+						string cam = calculateCam(reorderedAdj, subgraphSize);
+						adjstr2cam[reorderedAdj] = cam; //Apr. 3 2017, creat map from adjacent string to cam string
+						callNautyCount += 1;
+					}
+				}
+				else // adj has been reordered before
+				{
+					re_adj = adjstr2adjstr[adj];
+					cam = adjstr2cam[re_adj]; // if been reordered, it should have cam
+				}
+			}
+
+			if (frequentFinalGraph.find(cam) == frequentFinalGraph.end())// the cam doesn't appear in the orignal network
+			{
+				g->notClassSubCounter += adj_count;
+
+			}
+			else // the cam does appear in the orignal network
+			{
+				if(tmp_cam.find(cam) == tmp_cam.end())
+					tmp_cam[cam] = adj_count;
+				else
+					tmp_cam[cam] += adj_count;
+			}
+		}
+
+		int class_count = 0;
+		for(hash_map<string, long long int>::iterator iter = frequentFinalGraph.begin(); iter != frequentFinalGraph.end(); iter++)
+		{
+			hash_map< string, int >::iterator iter_tmp = tmp_cam.find(iter->first);
+			if(iter_tmp != tmp_cam.end())
+				rand_stat[i][class_count] = iter_tmp->second;
+			else
+				rand_stat[i][class_count] = 0;
+			class_count += 1;
+		}
+		cout<<"class_count = "<<class_count<<endl;
+		
+    	printf("\nTotal Number of Subgraphs in Random graph %d:      %llu\n", i, g->subgraphCounter);
+		printf("Number of Classified Subgraphs in Random graph %d: %llu\n", i, g->subgraphCounter-g->notClassSubCounter);
+		AvgTotRndSubCounter += g->subgraphCounter;
+		AvgRndSubCounter += g->subgraphCounter-g->notClassSubCounter;
+	}
+
+	printf("\nRandoms Completed!!!\n");
+
+
+	if (0 < num_random_graphs)
+	{
+		for (int i = 0; i < class_num; ++i)
+		{
+	
+			long long int sum = 0;
+			long long int var1 = 0;
+			for (int j = 1; j <= num_random_graphs; ++j)
+			{	cout<<rand_stat[j][i]<<" ";
+				sum += rand_stat[j][i];
+				var1 += rand_stat[j][i]*rand_stat[j][i];
+			}
+			mean[i] = sum/(double)num_random_graphs;
+	
+			var[i] = sqrt((var1-(num_random_graphs*(mean[i]*mean[i])))/(double)num_random_graphs);
+			
+			if(var[i] != 0)
+				Score[i] = ((double)C_main[i] - mean[i])/var[i];
+			else
+				Score[i] = -1.0;
+		}
+	}
+
+
 
 	delete g;
 	//delete IsD;
@@ -1027,6 +1196,6 @@ int main(int argc, char *argv[]) {
 	
 	//printf("Time for density check: %f\n", densityCheckTime);
 	//printf("Time for adjStr: %f\n", AdjStrTime);
-	outfile.close();
+	//outfile.close();
 	return 0;
 }

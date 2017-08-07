@@ -21,7 +21,7 @@ static DEFAULTOPTIONS(options);
 statsblk(stats);
 setword workspace[160*MAXM];
 
-extern ofstream outfile;
+//extern ofstream outfile;
 
 int idxID;
 unsigned long head;
@@ -31,9 +31,9 @@ FILE * o;
 
 extern bool isRand;
 //extern bool* IsD;
-extern unsigned long long callNautyCount;
+
 extern hash_map<std::string,long long int> graphInt;
-extern hash_map<std::string,long long int> treeInt;
+
 
 
 
@@ -90,10 +90,10 @@ void Subgraph::AddChild(int vertex) {
 /****************************************************************
 This function is responsible for enumerating and partially classifying the subgraphs with 'AdjString' 
 ****************************************************************/
-void Graph::Nexts(Subgraph *sub, int maxSize, int startChild) {//g->Nexts(sub, subgraphSize, 0);
+void Graph::Nexts(Subgraph *sub, int maxSize, int startChild, int v) {//g->Nexts(sub, subgraphSize, 0);
 
 	//cout<<subgraphCounter<<endl;
-	if ((subgraph_THR != 0)&&(subgraphCounter >= subgraph_THR))
+	if ((subgraph_THR != 0)&&(subgraphCounter_v[v] >= subgraph_THR))
 	{
 		return;
 	}//useful
@@ -143,9 +143,10 @@ void Graph::Nexts(Subgraph *sub, int maxSize, int startChild) {//g->Nexts(sub, s
 
 		sub->subgraphSize++;
 
-		if((sub->subgraphSize == maxSize)&&(subgraphCounter < subgraph_THR))// useful
+		if((sub->subgraphSize == maxSize)&&(subgraphCounter_v[v] < subgraph_THR))// useful
 		{
 			subgraphCounter++;
+			subgraphCounter_v[v]++;
 			register int i,j;
 			int subEdgeNum = 0;
 			
@@ -191,12 +192,12 @@ void Graph::Nexts(Subgraph *sub, int maxSize, int startChild) {//g->Nexts(sub, s
 					outline += "\t";
 				}
 				outline += "\n";
-				outfile << outline;
+				//outfile << outline;
 			}	
 
 		}
 		else
-			Nexts(sub, maxSize, c+1);
+			Nexts(sub, maxSize, c+1, v);
 	
 		sub->subgraphSize--;
 		sub->lastVertex = sub->vertices[subgraphSize-1];
@@ -477,6 +478,11 @@ string Graph::GetAdjMatString(unsigned int* subVertices)// here, adjMatStr can b
 Graph::Graph(const int n, int k) {
 	register int i, j;
 	subgraphSize = k;
+	subgraphCounter_v = new long long unsigned[n+1]; // Apr. 4 2017
+	for (int i = 1; i <= n; ++i)
+	{
+		subgraphCounter_v[i] = 0;
+	}
 
 	M = ((subgraphSize + WORDSIZE - 1) / WORDSIZE);
 	nauty_g = new graph[subgraphSize * MAXM];//graph=int, A 'graph' consists of n contiguous sets.  The i-th set represents 
@@ -582,6 +588,48 @@ void Graph::addEdgeAdjMat(vertex u, vertex v) {
 	adjMat[(rowSize*u) + (v>>3)] |= (1 << (v % 8));
 }
 
+/****************************************************************
+****************************************************************/
+
+void Graph::deleteEdgeAdjMat(vertex u, vertex v) {
+	adjMat[(rowSize*u) + (v>>3)] &= (~(1 << (v % 8)));
+}
+void Graph::swapEdge(vertex v, int ind, vertex u) {	
+	if(u < E[v][ind]) {
+		ind++;
+		while(ind <= E[v][0] && u < E[v][ind]) {
+			E[v][ind-1] = E[v][ind];
+			ind++;
+		}
+		if(ind <= E[v][0] && u == E[v][ind]) {
+			while(ind <= E[v][0]) {
+				E[v][ind-1] = E[v][ind];
+				ind++;
+			}
+			E[v][0]--;
+		}
+		else
+			E[v][ind-1] = u;
+	}
+	else {
+		ind--;
+		while(ind > 0 && u > E[v][ind]) {
+			E[v][ind+1] = E[v][ind];
+			ind--;
+		}
+		if(ind > 0 && u == E[v][ind]) {
+			ind++;
+			ind++;
+			while(ind <= E[v][0]) {
+				E[v][ind-1] = E[v][ind];
+				ind++;
+			}
+			E[v][0]--;
+		}
+		else
+			E[v][ind+1] = u;
+	}	
+}
 
 
 
@@ -607,6 +655,13 @@ bool Graph::isConnected(vertex u, vertex v) {
 
 int* Graph::getNeighbours(vertex v) {
 	return E[v];
+}
+
+/****************************************************************
+****************************************************************/
+int Graph::get_vertex() {
+	int ind = rand() % nEd;
+	return degree[ind];
 }
 
 bool compare(int a, int b)
