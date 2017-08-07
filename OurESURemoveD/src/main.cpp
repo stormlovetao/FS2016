@@ -830,7 +830,7 @@ int main(int argc, char *argv[]) {
 		string adj = it->first;
 		std::vector< pair<int, int> > nodeDegreeVec;
 		string reorderedAdj = ReorderAdj(adj, nodeDegreeVec);
-		cout<<adj<<" -> "<<reorderedAdj<<endl;
+		//cout<<adj<<" -> "<<reorderedAdj<<endl;
 
 		//reorderedAdj = adj;
 		 //write adj and reorderdAdj;
